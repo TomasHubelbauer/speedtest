@@ -30,9 +30,10 @@ void async function () {
   try {
     netflix = await goNetflix();
     console.log('Netflix', netflix);
-    await fs.appendFile('speeds.log', `${new Date().toISOString()} Netflix ${speed}\n`);
+    await fs.appendFile('speeds.log', `${new Date().toISOString()} Netflix ${netflix}\n`);
   }
   catch (error) {
+    console.log('Netflix error', error);
     // Ignore the individual service failure, we'll deal if all services fail
   }
 
@@ -40,9 +41,10 @@ void async function () {
   try {
     ookla = await goOokla();
     console.log('Ookla', ookla);
-    await fs.appendFile('speeds.log', `${new Date().toISOString()} Ookla ${speed}\n`);
+    await fs.appendFile('speeds.log', `${new Date().toISOString()} Ookla ${ookla}\n`);
   }
   catch (error) {
+    console.log('Ookla error', error);
     // Ignore the individual service failure, we'll deal if all services fail
   }
 
