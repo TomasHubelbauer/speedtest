@@ -1,5 +1,6 @@
 const puppeteer = require('puppeteer');
 const fs = require('fs-extra');
+const email = require('../self-email');
 
 async function goNetflix() {
   const browser = await puppeteer.launch();
@@ -51,4 +52,18 @@ void async function () {
   if (!netflix && !ookla) {
     // TODO: Email a notification to myself
   }
+
+  await email(`
+From: Speedtest <bot@hubelbauer.net>
+To: tomas@hubelbauer.net
+Subject: Speedtest
+Content-Type: text/html
+
+<ul>
+<li>Netflix: ${netflix}</li>
+<li>Ookla: ${ookla}</li>
+</ul>
+
+Thanks!
+`);
 }()
