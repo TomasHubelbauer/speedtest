@@ -26,34 +26,35 @@ async function goOokla() {
   return speed;
 }
 
-void async function () {
-  let netflix;
-  try {
-    netflix = await goNetflix();
-    console.log('Netflix', netflix);
-    await fs.appendFile('speeds.log', `${new Date().toISOString()} Netflix ${netflix}\n`);
-  }
-  catch (error) {
-    console.log('Netflix error', error);
-    // Ignore the individual service failure, we'll deal if all services fail
-  }
+module.exports = (
+  async function () {
+    let netflix;
+    try {
+      netflix = await goNetflix();
+      console.log('Netflix', netflix);
+      await fs.appendFile('speeds.log', `${new Date().toISOString()} Netflix ${netflix}\n`);
+    }
+    catch (error) {
+      console.log('Netflix error', error);
+      // Ignore the individual service failure, we'll deal if all services fail
+    }
 
-  let ookla;
-  try {
-    ookla = await goOokla();
-    console.log('Ookla', ookla);
-    await fs.appendFile('speeds.log', `${new Date().toISOString()} Ookla ${ookla}\n`);
-  }
-  catch (error) {
-    console.log('Ookla error', error);
-    // Ignore the individual service failure, we'll deal if all services fail
-  }
+    let ookla;
+    try {
+      ookla = await goOokla();
+      console.log('Ookla', ookla);
+      await fs.appendFile('speeds.log', `${new Date().toISOString()} Ookla ${ookla}\n`);
+    }
+    catch (error) {
+      console.log('Ookla error', error);
+      // Ignore the individual service failure, we'll deal if all services fail
+    }
 
-  if (!netflix && !ookla) {
-    // TODO: Email a notification to myself
-  }
+    if (!netflix && !ookla) {
+      // TODO: Email a notification to myself
+    }
 
-  await email(`
+    await email(`
 From: Speedtest <bot@hubelbauer.net>
 To: tomas@hubelbauer.net
 Subject: Speedtest
@@ -66,4 +67,5 @@ Content-Type: text/html
 
 Thanks!
 `);
-}()
+  }
+)()
