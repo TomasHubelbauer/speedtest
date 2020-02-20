@@ -1,6 +1,7 @@
 const puppeteer = require('puppeteer');
 const fs = require('fs-extra');
 const email = require('../self-email');
+const headers = require('../self-email/headers');
 
 async function goNetflix() {
   const browser = await puppeteer.launch();
@@ -35,6 +36,7 @@ module.exports = (
       await fs.appendFile('speeds.log', `${new Date().toISOString()} Netflix ${netflix}\n`);
     }
     catch (error) {
+      netflix = 'failed';
       console.log('Netflix error', error);
       // Ignore the individual service failure, we'll deal if all services fail
     }
@@ -46,6 +48,7 @@ module.exports = (
       await fs.appendFile('speeds.log', `${new Date().toISOString()} Ookla ${ookla}\n`);
     }
     catch (error) {
+      ookla = 'failed';
       console.log('Ookla error', error);
       // Ignore the individual service failure, we'll deal if all services fail
     }
@@ -54,18 +57,13 @@ module.exports = (
       // TODO: Email a notification to myself
     }
 
-    await email(`
-From: Speedtest <bot@hubelbauer.net>
-To: tomas@hubelbauer.net
-Subject: Speedtest
-Content-Type: text/html
-
-<ul>
-<li>Netflix: ${netflix}</li>
-<li>Ookla: ${ookla}</li>
-</ul>
-
-Thanks!
-`);
+    await email(
+      headers('Speedtest', `Netflix ${netflix} & Ookla ${ookla}`),
+      '<ul>',
+      `<li>Netflix: ${netflix}</li>`,
+      `<li>Ookla: ${ookla}</li>`,
+      '</ul>',
+      'Thank you'
+    );
   }
 )()
