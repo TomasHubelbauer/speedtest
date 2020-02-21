@@ -83,7 +83,7 @@ module.exports = (
       '</ul>',
 
       // Note that rendering SVG directly to EML has poor support so we render PNG
-      '<img src="data:image/png;base64,',
+      '<img width="100%" src="data:image/png;base64,',
       ...await renderChart(),
       '" />',
       ...footer('Speedtest')
