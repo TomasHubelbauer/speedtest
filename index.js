@@ -2,6 +2,7 @@ const puppeteer = require('puppeteer');
 const fs = require('fs-extra');
 const email = require('../self-email');
 const headers = require('../self-email/headers');
+const footer = require('../self-email/footer');
 
 async function goNetflix() {
   const browser = await puppeteer.launch();
@@ -53,17 +54,13 @@ module.exports = (
       // Ignore the individual service failure, we'll deal if all services fail
     }
 
-    if (!netflix && !ookla) {
-      // TODO: Email a notification to myself
-    }
-
     await email(
-      headers('Speedtest', `Netflix ${netflix} & Ookla ${ookla}`),
+      headers(`Netflix ${netflix} & Ookla ${ookla}`, 'Speedtest'),
       '<ul>',
       `<li>Netflix: ${netflix}</li>`,
       `<li>Ookla: ${ookla}</li>`,
       '</ul>',
-      'Thank you'
+      ...footer('Speedtest')
     );
   }
 )()
