@@ -29,18 +29,12 @@ async function goOokla() {
   return speed;
 }
 
-async function renderChart() {
-  const browser = await puppeteer.launch();
-  const [page] = await browser.pages();
-  await page.goto(__dirname + '/chart.svg');
-  const url = await page.screenshot({ encoding: 'base64', clip: { x: 0, y: 0, width: 640, height: 480 } });
-  await browser.close();
-  return url.match(/.{1,10}/g);
-}
-
-module.exports = (
-  async function () {
-    let netflix;
+module.exports = async function () {
+  let netflix;
+  if (process.argv[2] === 'dry-run') {
+    netflix = 'dry-run';
+  }
+  else {
     try {
       netflix = await goNetflix();
       console.log('Netflix', netflix);
@@ -51,8 +45,13 @@ module.exports = (
       console.log('Netflix error', error);
       // Ignore the individual service failure, we'll deal if all services fail
     }
+  }
 
-    let ookla;
+  let ookla;
+  if (process.argv[2] === 'dry-run') {
+    ookla = 'dry-run';
+  }
+  else {
     try {
       ookla = await goOokla();
       console.log('Ookla', ookla);
@@ -63,30 +62,61 @@ module.exports = (
       console.log('Ookla error', error);
       // Ignore the individual service failure, we'll deal if all services fail
     }
+  }
 
-    async function parsePoints(path) {
-      const text = await fs.readFile(path, { encoding: 'ascii' });
-      const lines = text.split('\n').slice(0, -1); // Ditch newline at the end
-      const cells = lines.map(l => l.split(','));
-      return cells.map(c => ({ x: new Date(c[0]).valueOf(), y: Number(c[1]) }));
+  async function parsePoints(path) {
+    const text = await fs.readFile(path, { encoding: 'ascii' });
+    const lines = text.split('\n').slice(0, -1); // Ditch newline at the end
+    const cells = lines.map(l => l.split(','));
+    return cells.map(c => ({ x: new Date(c[0]).valueOf(), y: Number(c[1]) }));
+  }
+
+  function makeChart(netflixPoints, ooklaPoints, limit) {
+    if (limit) {
+      netflixPoints = { ...netflixPoints, points: netflixPoints.points.filter(p => p.x >= limit) };
+      ooklaPoints = { ...ooklaPoints, points: ooklaPoints.points.filter(p => p.x >= limit) };
     }
 
-    const netflixPoints = { color: 'maroon', points: await parsePoints('netflix.csv') };
-    const ooklaPoints = { color: 'blue', points: await parsePoints('ookla.csv') };
-    await fs.writeFile('chart.svg', chart(netflixPoints, ooklaPoints).join('\n'));
+    const svg = chart(netflixPoints, ooklaPoints);
+    return [
+      '<img width="100%" src="',
+      'data:image/svg+xml;base64,',
 
-    await email(
-      headers(`Netflix ${netflix} & Ookla ${ookla}`, 'Speedtest'),
-      '<ul>',
-      `<li>Netflix: ${netflix}</li>`,
-      `<li>Ookla: ${ookla}</li>`,
-      '</ul>',
-
-      // Note that rendering SVG directly to EML has poor support so we render PNG
-      '<img width="100%" src="data:image/png;base64,',
-      ...await renderChart(),
-      '" />',
-      ...footer('Speedtest')
-    );
+      // The Base64 lines each of 76 characters for MIME lines
+      ...Buffer.from(svg).toString('base64').match(/.{0,76}/g),
+      '" />'
+    ];
   }
-)()
+
+  const netflixPoints = { color: 'maroon', points: await parsePoints('netflix.csv') };
+  const ooklaPoints = { color: 'blue', points: await parsePoints('ookla.csv') };
+
+  let last24hours = new Date();
+  last24hours.setHours(last24hours.getHours() - 24);
+
+  let last7Days = new Date();
+  last7Days.setDate(last7Days.getDate() - 7);
+
+  let last30Days = new Date();
+  last30Days.setDate(last30Days.getDate() - 30);
+
+  // Embed SVG in `img` with a Base64 data URI because SVG in EML doesn't work
+  await email(
+    headers(`Netflix ${netflix} & Ookla ${ookla}`, 'Speedtest'),
+    '<ul>',
+    `<li>Netflix: ${netflix}</li>`,
+    `<li>Ookla: ${ookla}</li>`,
+    '</ul>',
+    '<b>Last 24 hours</b>',
+    ...makeChart(netflixPoints, ooklaPoints, last24hours),
+    '<b>Lat 7 days</b>',
+    ...makeChart(netflixPoints, ooklaPoints, last7Days),
+    '<b>Lat 30 days</b>',
+    ...makeChart(netflixPoints, ooklaPoints, last30Days),
+    '<b>All time</b>',
+    ...makeChart(netflixPoints, ooklaPoints),
+    ...footer('Speedtest')
+  );
+};
+
+module.exports = module.exports();

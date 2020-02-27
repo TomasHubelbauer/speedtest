@@ -1,6 +1,4 @@
+*.csv
+
 # Node
 node_modules
-
-# Output
-*.csv
-chart.svg
