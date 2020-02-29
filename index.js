@@ -3,7 +3,7 @@ const fs = require('fs-extra');
 const email = require('../self-email');
 const headers = require('../self-email/headers');
 const footer = require('../self-email/footer');
-const chart = require('./chart');
+const plot = require('svg-timeseries');
 
 async function goNetflix() {
   const browser = await puppeteer.launch();
@@ -71,18 +71,51 @@ module.exports = async function () {
     return cells.map(c => ({ x: new Date(c[0]).valueOf(), y: Number(c[1]) }));
   }
 
-  function makeChart(netflixPoints, ooklaPoints, limit) {
+  function makePlot(netflixPoints, ooklaPoints, limit) {
+    let title;
+    switch (limit) {
+      case '24-hours': {
+        title = 'Last 24 hours';
+        limit = new Date();
+        limit.setHours(limit.getHours() - 24);
+        break;
+      }
+      case '7-days': {
+        title = 'Last 7 days';
+        limit = new Date();
+        limit.setDate(limit.getDate() - 7);
+        break;
+      }
+      case '30-days': {
+        title = 'Last 30 days';
+        limit = new Date();
+        limit.setDate(limit.getDate() - 30);
+        break;
+      }
+      case undefined: {
+        title = 'All time';
+        break;
+      }
+      default: {
+        throw new Error(`Unexpected limit value: ${limit}.`)
+      }
+    }
+
     if (limit) {
       netflixPoints = { ...netflixPoints, points: netflixPoints.points.filter(p => p.x >= limit) };
       ooklaPoints = { ...ooklaPoints, points: ooklaPoints.points.filter(p => p.x >= limit) };
     }
 
-    const svg = chart(netflixPoints, ooklaPoints);
-    return [
-      '<img width="100%" src="',
-      'data:image/svg+xml;base64,',
+    if (netflixPoints.points.length < 2 || ooklaPoints.points.length < 2) {
+      return [];
+    }
 
-      // The Base64 lines each of 76 characters for MIME lines
+    const svg = plot(640, 480, 10, 'gray', netflixPoints, ooklaPoints);
+    return [
+      `<b>${title}</b>`,
+      // Embed SVG in `img` with a Base64 data URI because SVG in EML doesn't work
+      '<img width="100%" src="data:image/svg+xml;base64,',
+      // Split the Base64 lines into 76 characters each for MIME
       ...Buffer.from(svg).toString('base64').match(/.{0,76}/g),
       '" />'
     ];
@@ -91,30 +124,17 @@ module.exports = async function () {
   const netflixPoints = { color: 'maroon', points: await parsePoints('netflix.csv') };
   const ooklaPoints = { color: 'blue', points: await parsePoints('ookla.csv') };
 
-  let last24hours = new Date();
-  last24hours.setHours(last24hours.getHours() - 24);
-
-  let last7Days = new Date();
-  last7Days.setDate(last7Days.getDate() - 7);
-
-  let last30Days = new Date();
-  last30Days.setDate(last30Days.getDate() - 30);
-
-  // Embed SVG in `img` with a Base64 data URI because SVG in EML doesn't work
   await email(
     headers(`Netflix ${netflix} & Ookla ${ookla}`, 'Speedtest'),
     '<ul>',
     `<li>Netflix: ${netflix}</li>`,
     `<li>Ookla: ${ookla}</li>`,
     '</ul>',
-    '<b>Last 24 hours</b>',
-    ...makeChart(netflixPoints, ooklaPoints, last24hours),
-    '<b>Lat 7 days</b>',
-    ...makeChart(netflixPoints, ooklaPoints, last7Days),
-    '<b>Lat 30 days</b>',
-    ...makeChart(netflixPoints, ooklaPoints, last30Days),
-    '<b>All time</b>',
-    ...makeChart(netflixPoints, ooklaPoints),
+
+    ...makePlot(netflixPoints, ooklaPoints, '24-hours'),
+    ...makePlot(netflixPoints, ooklaPoints, '7-days'),
+    ...makePlot(netflixPoints, ooklaPoints, '30-days'),
+    ...makePlot(netflixPoints, ooklaPoints),
     ...footer('Speedtest')
   );
 };
