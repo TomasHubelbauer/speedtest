@@ -1,8 +1,7 @@
 const puppeteer = require('puppeteer');
 const fs = require('fs-extra');
 const email = require('../self-email');
-const headers = require('../self-email/headers');
-const footer = require('../self-email/footer');
+const { subject, sender, recipient } = require('../self-email');
 const plot = require('svg-timeseries');
 
 async function goNetflix() {
@@ -125,7 +124,9 @@ module.exports = async function () {
   const ooklaPoints = { color: 'blue', points: await parsePoints('ookla.csv') };
 
   await email(
-    headers(`Netflix ${netflix} & Ookla ${ookla}`, 'Speedtest'),
+    subject(`Speedtest`),
+    sender('Speedtest <bot@hubelbauer.net>'),
+    recipient('Tomas Hubelbauer <tomas@hubelbaur.net>'),
     '<ul>',
     `<li>Netflix: ${netflix}</li>`,
     `<li>Ookla: ${ookla}</li>`,
@@ -135,7 +136,6 @@ module.exports = async function () {
     ...makePlot(netflixPoints, ooklaPoints, '7-days'),
     ...makePlot(netflixPoints, ooklaPoints, '30-days'),
     ...makePlot(netflixPoints, ooklaPoints),
-    ...footer('Speedtest')
   );
 };
 
