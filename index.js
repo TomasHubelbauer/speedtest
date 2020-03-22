@@ -124,18 +124,20 @@ module.exports = async function () {
   const ooklaPoints = { color: 'blue', points: await parsePoints('ookla.csv') };
 
   await email(
-    subject(`Speedtest`),
-    sender('Speedtest <bot@hubelbauer.net>'),
-    recipient('Tomas Hubelbauer <tomas@hubelbaur.net>'),
-    '<ul>',
-    `<li>Netflix: ${netflix}</li>`,
-    `<li>Ookla: ${ookla}</li>`,
-    '</ul>',
+    eml(
+      subject(`Speedtest`),
+      sender('Speedtest <bot@hubelbauer.net>'),
+      recipient('Tomas Hubelbauer <tomas@hubelbaur.net>'),
+      '<ul>',
+      `<li>Netflix: ${netflix}</li>`,
+      `<li>Ookla: ${ookla}</li>`,
+      '</ul>',
 
-    ...makePlot(netflixPoints, ooklaPoints, '24-hours'),
-    ...makePlot(netflixPoints, ooklaPoints, '7-days'),
-    ...makePlot(netflixPoints, ooklaPoints, '30-days'),
-    ...makePlot(netflixPoints, ooklaPoints),
+      ...makePlot(netflixPoints, ooklaPoints, '24-hours'),
+      ...makePlot(netflixPoints, ooklaPoints, '7-days'),
+      ...makePlot(netflixPoints, ooklaPoints, '30-days'),
+      ...makePlot(netflixPoints, ooklaPoints)
+    )
   );
 };
 
