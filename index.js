@@ -1,7 +1,7 @@
 const puppeteer = require('puppeteer');
 const fs = require('fs-extra');
 const email = require('../self-email');
-const { subject, sender, recipient } = require('../self-email');
+const { eml, subject, sender, recipient } = require('../self-email');
 const plot = require('svg-timeseries');
 
 async function goNetflix() {
