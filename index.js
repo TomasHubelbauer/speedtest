@@ -1,5 +1,6 @@
 const puppeteer = require('puppeteer');
 const fs = require('fs-extra');
+const path = require('path');
 const email = require('../self-email');
 const { eml, subject, sender, recipient } = require('../self-email');
 const plot = require('svg-timeseries');
@@ -29,6 +30,7 @@ async function goOokla() {
 }
 
 module.exports = async function () {
+  const netflixCsvFilePath = path.join(__dirname, 'netflix.csv');
   let netflix;
   if (process.argv[2] === 'dry-run') {
     netflix = 'dry-run';
@@ -37,7 +39,7 @@ module.exports = async function () {
     try {
       netflix = await goNetflix();
       console.log('Netflix', netflix);
-      await fs.appendFile('netflix.csv', `${new Date().toISOString()},${netflix}\n`);
+      await fs.appendFile(netflixCsvFilePath, `${new Date().toISOString()},${netflix}\n`);
     }
     catch (error) {
       netflix = 'failed';
@@ -46,6 +48,7 @@ module.exports = async function () {
     }
   }
 
+  const ooklaCsvFilePath = path.join(__dirname, 'ookla.csv');
   let ookla;
   if (process.argv[2] === 'dry-run') {
     ookla = 'dry-run';
@@ -54,7 +57,7 @@ module.exports = async function () {
     try {
       ookla = await goOokla();
       console.log('Ookla', ookla);
-      await fs.appendFile('ookla.csv', `${new Date().toISOString()},${ookla}\n`);
+      await fs.appendFile(ooklaCsvFilePath, `${new Date().toISOString()},${ookla}\n`);
     }
     catch (error) {
       ookla = 'failed';
@@ -120,8 +123,8 @@ module.exports = async function () {
     ];
   }
 
-  const netflixPoints = { color: 'maroon', points: await parsePoints('netflix.csv') };
-  const ooklaPoints = { color: 'blue', points: await parsePoints('ookla.csv') };
+  const netflixPoints = { color: 'maroon', points: await parsePoints(netflixCsvFilePath) };
+  const ooklaPoints = { color: 'blue', points: await parsePoints(ooklaCsvFilePath) };
 
   await email(
     eml(
@@ -141,4 +144,6 @@ module.exports = async function () {
   );
 };
 
-module.exports = module.exports();
+if (process.cwd() === __dirname) {
+  module.exports();
+}
