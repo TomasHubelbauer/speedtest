@@ -1,8 +1,6 @@
 const puppeteer = require('puppeteer');
 const fs = require('fs-extra');
 const path = require('path');
-const email = require('../self-email');
-const { eml, subject, sender, recipient } = require('../self-email');
 const plot = require('svg-timeseries');
 
 async function goNetflix() {
@@ -126,24 +124,19 @@ module.exports = async function () {
   const netflixPoints = { color: 'maroon', points: await parsePoints(netflixCsvFilePath) };
   const ooklaPoints = { color: 'blue', points: await parsePoints(ooklaCsvFilePath) };
 
-  await email(
-    eml(
-      subject(`Speedtest`),
-      sender('Speedtest <bot@hubelbauer.net>'),
-      recipient('Tomas Hubelbauer <tomas@hubelbaur.net>'),
-      '<ul>',
-      `<li>Netflix: ${netflix}</li>`,
-      `<li>Ookla: ${ookla}</li>`,
-      '</ul>',
+  return [
+    '<ul>',
+    `<li>Netflix: ${netflix}</li>`,
+    `<li>Ookla: ${ookla}</li>`,
+    '</ul>',
 
-      ...makePlot(netflixPoints, ooklaPoints, '24-hours'),
-      ...makePlot(netflixPoints, ooklaPoints, '7-days'),
-      ...makePlot(netflixPoints, ooklaPoints, '30-days'),
-      ...makePlot(netflixPoints, ooklaPoints)
-    )
-  );
+    ...makePlot(netflixPoints, ooklaPoints, '24-hours'),
+    ...makePlot(netflixPoints, ooklaPoints, '7-days'),
+    ...makePlot(netflixPoints, ooklaPoints, '30-days'),
+    ...makePlot(netflixPoints, ooklaPoints)
+  ];
 };
 
 if (process.cwd() === __dirname) {
-  module.exports();
+  module.exports().then(console.log);
 }
